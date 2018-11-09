@@ -1,3 +1,6 @@
+#######
+# C++ #
+#######
 # Prerequisites
 *.d
 
@@ -16,10 +19,6 @@
 *.dylib
 *.dll
 
-# Fortran module files
-*.mod
-*.smod
-
 # Compiled Static libraries
 *.lai
 *.la
@@ -30,3 +29,76 @@
 *.exe
 *.out
 *.app
+
+#########
+# CMake #
+#########
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake-build-debug/
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+############################################################
+#               IDE specific ignores                       #
+# They should be in the user's global gitignore, not here. #
+############################################################
+
+#################
+# Visual Studio #
+#################
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+Win32/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+*.sln
+*.vcx*
+*~*.TMP
+_ReSharper.Caches/
+
+#############
+# JetBrains #
+#############
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# Generated files
+.idea/**/contentModel.xml
+
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+
+# CMake
+cmake-build-*/
+
+# Editor-based Rest Client
+.idea/httpRequests
