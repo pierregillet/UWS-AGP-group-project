@@ -5,12 +5,15 @@ project(agp_group_project)
 set(srcs main.cpp
         assetsLoader.cpp assetsLoader.h
         assetsPaths.h
+        constants.h
+        Mesh.cpp Mesh.h
         Game.cpp Game.h
         md2model.cpp md2model.h
         Player.cpp Player.h
         rt3d.cpp rt3d.h
         rt3dObjLoader.cpp rt3dObjLoader.h
-        sdlUtils.cpp sdlUtils.h constants.h Shader.h Shader.cpp Drawable.h DrawableObject.cpp DrawableObject.h)
+        sdlUtils.cpp sdlUtils.h
+        Shader.h Shader.cpp)
 add_executable(agp_group_project ${srcs})
 
 INCLUDE(FindPkgConfig)

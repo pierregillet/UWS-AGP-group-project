@@ -13,15 +13,10 @@
 #include <SDL2/SDL_ttf.h>
 #endif
 
-
 #include "md2model.h"
 #include "Player.h"
 #include "rt3d.h"
 
-
-extern GLuint meshIndexCount;
-extern GLuint toonIndexCount;
-extern GLuint meshObjects[];
 
 extern Player player;
 

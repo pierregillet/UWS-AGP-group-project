@@ -2,11 +2,13 @@
 #define AGP_INDIVIDUAL_PROJECT_ASSETSLOADER_H
 
 #include <GL/glew.h>
+#include <string>
+#include <vector>
 
 
-GLuint loadTexture(const char *fileName);
+GLuint loadTexture(std::string fileName);
 
-void loadCubeMap(const char * const fileName[6], GLuint *texID);
+void loadCubeMap(std::vector<std::string> fileName, GLuint *texID);
 
 
 #endif //AGP_INDIVIDUAL_PROJECT_ASSETSLOADER_H

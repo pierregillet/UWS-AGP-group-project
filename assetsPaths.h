@@ -1,46 +1,49 @@
 #ifndef AGP_INDIVIDUAL_PROJECT_ASSETSPATHS_H
 #define AGP_INDIVIDUAL_PROJECT_ASSETSPATHS_H
 
+#include <string>
+#include <vector>
+
 namespace assetsPaths {
-    const char * const bunnyObject = "../assets/bunny-5000.obj";
-    const char * const cubeObject = "../assets/cube.obj";
+    const std::string bunnyObject = "../assets/bunny-5000.obj";
+    const std::string cubeObject = "../assets/cube.obj";
 
-    const char * const fabricTexture = "../assets/fabric.bmp";
-    const char * const mossTexture = "../assets/moss.png";
-    const char * const studdedMetalTexture = "../assets/studdedmetal.bmp";
-    const char * const transparentWindowTexture = "../assets/transparent_window.png";
+    const std::string fabricTexture = "../assets/fabric.bmp";
+    const std::string mossTexture = "../assets/moss.png";
+    const std::string studdedMetalTexture = "../assets/studdedmetal.bmp";
+    const std::string transparentWindowTexture = "../assets/transparent_window.png";
 
-    const char * const skyboxTextures[6] = {
+    const std::vector<std::string> skyboxTextures = {
             "../assets/town-skybox/Town_bk.bmp", "../assets/town-skybox/Town_ft.bmp",
             "../assets/town-skybox/Town_rt.bmp", "../assets/town-skybox/Town_lf.bmp",
             "../assets/town-skybox/Town_up.bmp", "../assets/town-skybox/Town_dn.bmp"
     };
 
     struct Shader {
-        char * vertex;
-        char * fragment;
+        const std::string vertex;
+        const std::string fragment;
     };
 
-    Shader blendingShader = {const_cast<char *>("../shaders/blended.vert"),
-                             const_cast<char *>("../shaders/blended.frag")};
+    const Shader blendingShader = {"../shaders/blended.vert",
+                                   "../shaders/blended.frag"};
 
-    Shader cubeMapShader = {const_cast<char *>("../shaders/cubeMap.vert"),
-                            const_cast<char *>("../shaders/cubeMap.frag")};
+    const Shader cubeMapShader = {"../shaders/cubeMap.vert",
+                                  "../shaders/cubeMap.frag"};
 
-    Shader gouraudShader = {const_cast<char *>("../shaders/gouraud-tex.vert"),
-                            const_cast<char *>("../shaders/gouraud-tex.frag")};
+    const Shader gouraudShader = {"../shaders/gouraud-tex.vert",
+                                  "../shaders/gouraud-tex.frag"};
 
-    Shader phongShader = {const_cast<char *>("../shaders/phong-tex.vert"),
-                             const_cast<char *>("../shaders/phong-tex.frag")};
+    const Shader phongShader = {"../shaders/phong-tex.vert",
+                                "../shaders/phong-tex.frag"};
 
-    Shader texturedShader = {const_cast<char *>("../shaders/textured.vert"),
-                             const_cast<char *>("../shaders/textured.frag")};
+    const Shader texturedShader = {"../shaders/textured.vert",
+                                  "../shaders/textured.frag"};
 
-    Shader toonShader = {const_cast<char *>("../shaders/toon.vert"),
-                         const_cast<char *>("../shaders/toon.frag")};
+    const Shader toonShader = {"../shaders/toon.vert",
+                               "../shaders/toon.frag"};
 
-//    Shader reflectionShader = {const_cast<char *>("../shaders/reflection-tex.vert"),
-//                               const_cast<char *>("../shaders/reflection-tex.frag")};
+// const Shader reflectionShader = {"../shaders/reflection-tex.vert",
+//                                  "../shaders/reflection-tex.frag"};
 };
 
 #endif //AGP_INDIVIDUAL_PROJECT_ASSETSPATHS_H

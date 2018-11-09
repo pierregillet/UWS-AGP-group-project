@@ -19,9 +19,9 @@
 // Globals
 // Real programs don't use globals :-D
 
-GLuint meshIndexCount = 0;
-GLuint toonIndexCount = 0;
-GLuint meshObjects[2];
+//GLuint meshIndexCount = 0;
+//GLuint toonIndexCount = 0;
+//GLuint meshObjects[2];
 
 Player player(glm::vec3(-2.0f, 1.0f, 8.0f), glm::vec3(0.0f, 1.0f, -1.0f),
               glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);

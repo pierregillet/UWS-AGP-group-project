@@ -16,11 +16,11 @@
 
 // A simple texture loading function
 // lots of room for improvement - and better error checking!
-GLuint loadTexture(const char *const fileName) {
+GLuint loadTexture(const std::string fileName) {
     GLuint texID;
     glGenTextures(1, &texID); // generate texture ID
 
-    SDL_Surface *tmpSurface = IMG_Load(fileName);
+    SDL_Surface *tmpSurface = IMG_Load(fileName.c_str());
     if (nullptr == tmpSurface) {
         throw std::runtime_error("Error loading the " + std::string(fileName) + " image : " + IMG_GetError());
     }
@@ -54,7 +54,7 @@ GLuint loadTexture(const char *const fileName) {
 
 // A simple cubemap loading function
 // lots of room for improvement - and better error checking!
-void loadCubeMap(const char * const fileName[6], GLuint *texID) {
+void loadCubeMap(const std::vector<std::string> fileName, GLuint *texID) {
     glGenTextures(1, texID); // generate texture ID
     GLenum sides[6] = { GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
                         GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
@@ -71,7 +71,7 @@ void loadCubeMap(const char * const fileName[6], GLuint *texID) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     for (int i = 0; i < 6; i++) {
-        SDL_Surface *tmpSurface = IMG_Load(fileName[i]);
+        SDL_Surface *tmpSurface = IMG_Load(fileName[i].c_str());
         if (nullptr == tmpSurface) {
             std::cout << "Error loading bitmap" << std::endl;
             throw std::runtime_error("Error loading the " + std::string(fileName[i]) + " image : " + IMG_GetError());

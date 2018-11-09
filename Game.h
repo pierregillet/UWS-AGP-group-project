@@ -2,12 +2,15 @@
 #define AGP_INDIVIDUAL_PROJECT_GAME_H
 
 #include <GL/glew.h>
+#include <vector>
 #ifdef _WIN32
 #include <SDL.h>
 #endif
 #ifndef _WIN32
 #include <SDL2/SDL.h>
 #endif
+
+#include "Mesh.h"
 
 
 class Game {
@@ -27,6 +30,7 @@ private:
     GLuint toonShader;
     GLuint *currentBunnyShader;
     GLuint *blendingBaseTexture;
+    std::vector<Mesh> meshObjects;
 
     void initializeGlew();
     void setupRenderingContext();
