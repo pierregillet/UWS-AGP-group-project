@@ -21,9 +21,6 @@
 extern Player player;
 
 // TEXTURE STUFF
-extern GLuint textures[];
-extern GLuint skybox[];
-
 extern rt3d::lightStruct light0;
 extern glm::vec4 lightPos;
 

@@ -8,7 +8,7 @@
 
 GLuint loadTexture(std::string fileName);
 
-void loadCubeMap(std::vector<std::string> fileName, GLuint *texID);
+void loadCubeMap(const std::vector<std::string> & fileName, std::vector<GLuint> & texID);
 
 
 #endif //AGP_INDIVIDUAL_PROJECT_ASSETSLOADER_H

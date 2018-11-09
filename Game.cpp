@@ -78,7 +78,7 @@ void Game::setupRenderingContext() {
     if (!this->mainWindow) // Check window was created OK
         throw std::runtime_error("Unable to create window : " + std::string(SDL_GetError()));
 
-    this->mainContext = SDL_GL_CreateContext(this->mainWindow); // Create opengl context and attach to window
+    this->mainContext = SDL_GL_CreateContext(this->mainWindow); // Create openGL context and attach to window
     SDL_GL_SetSwapInterval(1); // set swap buffers to sync with monitor's vertical refresh rate
 }
 
@@ -151,12 +151,12 @@ void Game::init() {
     this->loadShaders();
 
     currentBunnyShader = &this->toonShader;
-    loadCubeMap(assetsPaths::skyboxTextures, &skybox[0]);
+    loadCubeMap(assetsPaths::skyboxTextures, this->skybox);
 
-    textures[0] = loadTexture(assetsPaths::fabricTexture);
-    textures[1] = loadTexture(assetsPaths::studdedMetalTexture);
-    textures[2] = loadTexture(assetsPaths::transparentWindowTexture);
-    textures[3] = loadTexture(assetsPaths::mossTexture);
+    textures = {loadTexture(assetsPaths::fabricTexture),
+                loadTexture(assetsPaths::studdedMetalTexture),
+                loadTexture(assetsPaths::transparentWindowTexture),
+                loadTexture(assetsPaths::mossTexture)};
 
     blendingBaseTexture = &textures[0];
 
@@ -176,7 +176,8 @@ void Game::draw() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glm::mat4 projection(1.0);
-    projection = glm::perspective(float(60.0f * Constants::degreeToRadian), 800.0f / 600.0f, 1.0f, 150.0f);
+    projection = glm::perspective(float(60.0f * Constants::degreeToRadian),
+                                  800.0f / 600.0f, 1.0f, 150.0f);
 
 
     GLfloat scale(1.0f); // Just to allow easy scaling of complete scene

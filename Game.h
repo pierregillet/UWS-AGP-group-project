@@ -31,6 +31,8 @@ private:
     GLuint *currentBunnyShader;
     GLuint *blendingBaseTexture;
     std::vector<Mesh> meshObjects;
+    std::vector<GLuint> textures;
+    std::vector<GLuint> skybox = std::vector<GLuint>(6);
 
     void initializeGlew();
     void setupRenderingContext();

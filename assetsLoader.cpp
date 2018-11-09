@@ -54,8 +54,8 @@ GLuint loadTexture(const std::string fileName) {
 
 // A simple cubemap loading function
 // lots of room for improvement - and better error checking!
-void loadCubeMap(const std::vector<std::string> fileName, GLuint *texID) {
-    glGenTextures(1, texID); // generate texture ID
+void loadCubeMap(const std::vector<std::string> & fileName, std::vector<GLuint> & texID) {
+    glGenTextures(1, &texID[0]); // generate texture ID
     GLenum sides[6] = { GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
                         GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
                         GL_TEXTURE_CUBE_MAP_POSITIVE_X,
@@ -63,14 +63,14 @@ void loadCubeMap(const std::vector<std::string> fileName, GLuint *texID) {
                         GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
                         GL_TEXTURE_CUBE_MAP_NEGATIVE_Y };
 
-    glBindTexture(GL_TEXTURE_CUBE_MAP, *texID); // bind texture and set parameters
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texID[0]); // bind texture and set parameters
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-    for (int i = 0; i < 6; i++) {
+    for(size_t i = 0; i != fileName.size(); ++i) {
         SDL_Surface *tmpSurface = IMG_Load(fileName[i].c_str());
         if (nullptr == tmpSurface) {
             std::cout << "Error loading bitmap" << std::endl;

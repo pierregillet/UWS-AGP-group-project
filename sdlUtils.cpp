@@ -27,9 +27,6 @@ Player player(glm::vec3(-2.0f, 1.0f, 8.0f), glm::vec3(0.0f, 1.0f, -1.0f),
               glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
 
 // TEXTURE STUFF
-GLuint textures[4];
-GLuint skybox[5];
-
 rt3d::lightStruct light0 = {
         {0.4f, 0.4f, 0.4f, 1.0f}, // ambient
         {1.0f, 1.0f, 1.0f, 1.0f}, // diffuse
