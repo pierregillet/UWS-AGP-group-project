@@ -21,8 +21,14 @@ namespace assetsPaths {
         char * fragment;
     };
 
+    Shader blendingShader = {const_cast<char *>("../shaders/blended.vert"),
+                             const_cast<char *>("../shaders/blended.frag")};
+
     Shader cubeMapShader = {const_cast<char *>("../shaders/cubeMap.vert"),
                             const_cast<char *>("../shaders/cubeMap.frag")};
+
+    Shader gouraudShader = {const_cast<char *>("../shaders/gouraud-tex.vert"),
+                            const_cast<char *>("../shaders/gouraud-tex.frag")};
 
     Shader phongShader = {const_cast<char *>("../shaders/phong-tex.vert"),
                              const_cast<char *>("../shaders/phong-tex.frag")};
@@ -32,12 +38,6 @@ namespace assetsPaths {
 
     Shader toonShader = {const_cast<char *>("../shaders/toon.vert"),
                          const_cast<char *>("../shaders/toon.frag")};
-
-    Shader blendingShader = {const_cast<char *>("../shaders/blended.vert"),
-                             const_cast<char *>("../shaders/blended.frag")};
-
-    Shader gouraudShader = {const_cast<char *>("../shaders/gouraud-tex.vert"),
-                            const_cast<char *>("../shaders/gouraud-tex.frag")};
 
 //    Shader reflectionShader = {const_cast<char *>("../shaders/reflection-tex.vert"),
 //                               const_cast<char *>("../shaders/reflection-tex.frag")};

@@ -10,7 +10,7 @@ set(srcs main.cpp
         Player.cpp Player.h
         rt3d.cpp rt3d.h
         rt3dObjLoader.cpp rt3dObjLoader.h
-        sdlUtils.cpp sdlUtils.h constants.h)
+        sdlUtils.cpp sdlUtils.h constants.h Shader.h Shader.cpp Drawable.h DrawableObject.cpp DrawableObject.h)
 add_executable(agp_group_project ${srcs})
 
 INCLUDE(FindPkgConfig)

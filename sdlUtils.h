@@ -23,16 +23,6 @@ extern GLuint meshIndexCount;
 extern GLuint toonIndexCount;
 extern GLuint meshObjects[];
 
-extern GLuint skyboxProgram;
-extern GLuint textureProgram;
-extern GLuint phongShaderProgram;
-extern GLuint toonShaderProgram;
-extern GLuint blendingProgram;
-extern GLuint gouraudShaderProgram;
-
-extern GLuint *currentBunnyShader;
-extern GLuint *blendingBaseTexture;
-
 extern Player player;
 
 // TEXTURE STUFF
@@ -54,10 +44,6 @@ extern float theta;
 
 
 GLuint initProgramWithLight(const char *vertexShader, const char *fragmentShader);
-
-void init();
-
-void draw(SDL_Window * window);
 
 
 #endif //SDL_OPENGL_BASICS_SDLUTILS_H

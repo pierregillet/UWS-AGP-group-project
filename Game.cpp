@@ -9,7 +9,10 @@
 #include <SDL2/SDL.h>
 #endif
 
+#include "assetsPaths.h"
+#include "assetsLoader.h"
 #include "constants.h"
+#include "rt3dObjLoader.h"
 #include "sdlUtils.h"
 
 
@@ -28,7 +31,7 @@ void Game::runEventLoop() {
     SDL_Event sdlEvent;
     bool running = true;
 
-    init();
+    this->init();
 
     while (running) {
         while (SDL_PollEvent(&sdlEvent)) {
@@ -109,11 +112,58 @@ void Game::handleUserInput() {
         glEnable(GL_CULL_FACE);
     }
 
-    if (keys[SDL_SCANCODE_3]) currentBunnyShader = &textureProgram;
-    if (keys[SDL_SCANCODE_4]) currentBunnyShader = &phongShaderProgram;
-    if (keys[SDL_SCANCODE_5]) currentBunnyShader = &toonShaderProgram;
+    if (keys[SDL_SCANCODE_3]) currentBunnyShader = &this->textureShader;
+    if (keys[SDL_SCANCODE_4]) currentBunnyShader = &this->phongShader;
+    if (keys[SDL_SCANCODE_5]) currentBunnyShader = &this->toonShader;
     if (keys[SDL_SCANCODE_7]) blendingBaseTexture = &textures[0];
     if (keys[SDL_SCANCODE_8]) blendingBaseTexture = &textures[1];
+}
+
+void Game::loadShaders() {
+    this->blendingShader = rt3d::initShaders(assetsPaths::blendingShader.vertex, assetsPaths::blendingShader.fragment);
+    this->gouraudShader = initProgramWithLight(assetsPaths::gouraudShader.vertex, assetsPaths::gouraudShader.fragment);
+    this->phongShader = initProgramWithLight(assetsPaths::phongShader.vertex, assetsPaths::phongShader.fragment);
+    this->skyboxShader = rt3d::initShaders(assetsPaths::cubeMapShader.vertex, assetsPaths::cubeMapShader.fragment);
+    this->textureShader = rt3d::initShaders(assetsPaths::texturedShader.vertex, assetsPaths::texturedShader.fragment);
+    this->toonShader = initProgramWithLight(assetsPaths::toonShader.vertex, assetsPaths::toonShader.fragment);
+}
+
+void Game::init() {
+    this->loadShaders();
+
+    currentBunnyShader = &this->toonShader;
+    loadCubeMap(assetsPaths::skyboxTextures, &skybox[0]);
+
+    textures[0] = loadTexture(assetsPaths::fabricTexture);
+    textures[1] = loadTexture(assetsPaths::studdedMetalTexture);
+    textures[2] = loadTexture(assetsPaths::transparentWindowTexture);
+    textures[3] = loadTexture(assetsPaths::mossTexture);
+
+    blendingBaseTexture = &textures[0];
+
+    std::vector<GLfloat> verts;
+    std::vector<GLfloat> norms;
+    std::vector<GLfloat> tex_coords;
+    std::vector<GLuint> indices;
+    rt3d::loadObj(assetsPaths::cubeObject, verts, norms, tex_coords, indices);
+    meshIndexCount = static_cast<GLuint>(indices.size());
+    meshObjects[0] = rt3d::createMesh(
+            static_cast<const GLuint>(verts.size() / 3), verts.data(),
+            nullptr, norms.data(), tex_coords.data(), meshIndexCount,
+            indices.data()
+    );
+
+    verts.clear(); norms.clear(); tex_coords.clear(); indices.clear();
+    rt3d::loadObj(assetsPaths::bunnyObject, verts, norms, tex_coords, indices);
+    toonIndexCount = static_cast<GLuint>(indices.size());
+    meshObjects[1] = rt3d::createMesh(
+            static_cast<const GLuint>(verts.size() / 3), verts.data(),
+            nullptr, norms.data(), nullptr, toonIndexCount, indices.data()
+    );
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Game::draw() {
@@ -135,8 +185,8 @@ void Game::draw() {
     mvStack.top() = player.getCameraDirection();
 
     // Skybox as single cube using cube map
-    glUseProgram(skyboxProgram);
-    rt3d::setUniformMatrix4fv(skyboxProgram, "projection", glm::value_ptr(projection));
+    glUseProgram(this->skyboxShader);
+    rt3d::setUniformMatrix4fv(this->skyboxShader, "projection", glm::value_ptr(projection));
 
     glDepthMask(GL_FALSE); // Make sure writing to update depth test is off
     auto mvRotOnlyMat3 = glm::mat3(mvStack.top());
@@ -145,7 +195,7 @@ void Game::draw() {
     glCullFace(GL_FRONT); // Drawing inside of cube!
     glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.5f, 1.5f, 1.5f));
-    rt3d::setUniformMatrix4fv(skyboxProgram, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::setUniformMatrix4fv(this->skyboxShader, "modelview", glm::value_ptr(mvStack.top()));
     rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
     mvStack.pop();
     glCullFace(GL_BACK); // Drawing inside of cube!
@@ -158,20 +208,20 @@ void Game::draw() {
     light0.position[0] = tmp.x;
     light0.position[1] = tmp.y;
     light0.position[2] = tmp.z;
-    rt3d::setLightPos(phongShaderProgram, glm::value_ptr(tmp));
-    rt3d::setLightPos(toonShaderProgram, glm::value_ptr(tmp));
-    rt3d::setLightPos(gouraudShaderProgram, glm::value_ptr(tmp));
+    rt3d::setLightPos(this->phongShader, glm::value_ptr(tmp));
+    rt3d::setLightPos(this->toonShader, glm::value_ptr(tmp));
+    rt3d::setLightPos(this->gouraudShader, glm::value_ptr(tmp));
 
-    glUseProgram(phongShaderProgram);
-    rt3d::setUniformMatrix4fv(phongShaderProgram, "projection", glm::value_ptr(projection));
+    glUseProgram(this->phongShader);
+    rt3d::setUniformMatrix4fv(this->phongShader, "projection", glm::value_ptr(projection));
 
     // Draw a small cube block at lightPos
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(lightPos[0], lightPos[1], lightPos[2]));
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.25f, 0.25f, 0.25f));
-    rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(phongShaderProgram, material0);
+    rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::setMaterial(this->phongShader, material0);
     rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
     mvStack.pop();
 
@@ -180,8 +230,8 @@ void Game::draw() {
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
-    rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(phongShaderProgram, material0);
+    rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::setMaterial(this->phongShader, material0);
     rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
     mvStack.pop();
 
@@ -191,57 +241,57 @@ void Game::draw() {
         mvStack.push(mvStack.top());
         mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f + b * 2, 1.0f, -16.0f + b * 2));
         mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.5f, 1.0f + b, 0.5f));
-        rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-        rt3d::setMaterial(phongShaderProgram, material0);
+        rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
+        rt3d::setMaterial(this->phongShader, material0);
         rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
         mvStack.pop();
     }
 
     // Draw a rotating cube to be environment/reflection mapped
-    glUseProgram(phongShaderProgram);
+    glUseProgram(this->phongShader);
     glBindTexture(GL_TEXTURE_2D, textures[1]);
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -3.0f));
     mvStack.top() = glm::rotate(mvStack.top(), float(theta * Constants::degreeToRadian), glm::vec3(1.0f, 1.0f, 1.0f));
     theta += 1.0f;
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.5f, 0.5f, 0.5f));
-    rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(phongShaderProgram, material1);
+    rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::setMaterial(this->phongShader, material1);
     rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
     mvStack.pop();
 
     // Draw the shaded bunny
-    glUseProgram(*currentBunnyShader);
-    rt3d::setUniformMatrix4fv(*currentBunnyShader, "projection", glm::value_ptr(projection));
+    glUseProgram(*this->currentBunnyShader);
+    rt3d::setUniformMatrix4fv(*this->currentBunnyShader, "projection", glm::value_ptr(projection));
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
-    rt3d::setUniformMatrix4fv(*currentBunnyShader, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(*currentBunnyShader, material0);
+    rt3d::setUniformMatrix4fv(*this->currentBunnyShader, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::setMaterial(*this->currentBunnyShader, material0);
     rt3d::drawIndexedMesh(meshObjects[1], toonIndexCount, GL_TRIANGLES);
     mvStack.pop();
 
     // Draw a small cube with blending effect
-    glUseProgram(blendingProgram);
-    rt3d::setUniformMatrix4fv(blendingProgram, "projection", glm::value_ptr(projection));
+    glUseProgram(this->blendingShader);
+    rt3d::setUniformMatrix4fv(this->blendingShader, "projection", glm::value_ptr(projection));
     // Copy brick texture to OpenGL
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, *blendingBaseTexture);
     // Set the baseTex sampler uniform to texture unit 0
-    int uniformLocation = glGetUniformLocation(blendingProgram, "baseTex");
+    int uniformLocation = glGetUniformLocation(this->blendingShader, "baseTex");
     if (uniformLocation >= 0) {
         glUniform1i(uniformLocation, 0);
     }
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, textures[3]);
     // Set the effectTex sampler uniform to texture unit 1
-    uniformLocation = glGetUniformLocation(blendingProgram, "effectTex");
+    uniformLocation = glGetUniformLocation(this->blendingShader, "effectTex");
     if (uniformLocation >= 0) {
         glUniform1i(uniformLocation, 1);
     }
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, 1.5f, -3.0f));
-    rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
     rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
     glActiveTexture(GL_TEXTURE0);
     mvStack.pop();
