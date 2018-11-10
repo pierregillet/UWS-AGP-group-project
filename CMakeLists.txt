@@ -8,6 +8,7 @@ set(srcs main.cpp
         constants.h
         Mesh.cpp Mesh.h
         Game.cpp Game.h
+        Light.cpp Light.h
         md2model.cpp md2model.h
         Player.cpp Player.h
         rt3d.cpp rt3d.h

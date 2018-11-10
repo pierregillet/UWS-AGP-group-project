@@ -19,23 +19,7 @@
 
 
 extern Player player;
-
-// TEXTURE STUFF
-extern rt3d::lightStruct light0;
-extern glm::vec4 lightPos;
-
-extern rt3d::materialStruct material0;
-extern rt3d::materialStruct material1;
-
-// light attenuation
-extern float attConstant;
-extern float attLinear;
-extern float attQuadratic;
-
 extern float theta;
-
-
-GLuint initProgramWithLight(const char *vertexShader, const char *fragmentShader);
 
 
 #endif //SDL_OPENGL_BASICS_SDLUTILS_H

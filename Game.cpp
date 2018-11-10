@@ -15,11 +15,13 @@
 #include "Mesh.h"
 #include "rt3dObjLoader.h"
 #include "sdlUtils.h"
+#include "Shader.h"
 
 
 Game::Game() {
     this->setupRenderingContext(); // Create window and render context
     this->initializeGlew();
+    this->init();
 }
 
 Game::~Game() {
@@ -31,8 +33,6 @@ Game::~Game() {
 void Game::runEventLoop() {
     SDL_Event sdlEvent;
     bool running = true;
-
-    this->init();
 
     while (running) {
         while (SDL_PollEvent(&sdlEvent)) {
@@ -82,72 +82,9 @@ void Game::setupRenderingContext() {
     SDL_GL_SetSwapInterval(1); // set swap buffers to sync with monitor's vertical refresh rate
 }
 
-void Game::handleUserInput() {
-    // Todo : Handle KeyPresses events instead of checking if the key is
-    //  pressed each loop, or find a better way to structure this function
-    const Uint8 *keys = SDL_GetKeyboardState(nullptr);
-    if (keys[SDL_SCANCODE_W]) player.moveForward(0.1f);
-    if (keys[SDL_SCANCODE_S]) player.moveForward(-0.1f);
-    if (keys[SDL_SCANCODE_A]) player.moveRight(-0.1f);
-    if (keys[SDL_SCANCODE_D]) player.moveRight(0.1f);
-    if (keys[SDL_SCANCODE_R]) player.moveUp(0.1f);
-    if (keys[SDL_SCANCODE_F]) player.moveUp(-0.1f);
-
-    if (keys[SDL_SCANCODE_Q]) player.lookRight(-1.0f);
-    if (keys[SDL_SCANCODE_E]) player.lookRight(1.0f);
-
-    if (keys[SDL_SCANCODE_I]) lightPos[2] -= 0.1;
-    if (keys[SDL_SCANCODE_J]) lightPos[0] -= 0.1;
-    if (keys[SDL_SCANCODE_K]) lightPos[2] += 0.1;
-    if (keys[SDL_SCANCODE_L]) lightPos[0] += 0.1;
-    if (keys[SDL_SCANCODE_U]) lightPos[1] += 0.1;
-    if (keys[SDL_SCANCODE_H]) lightPos[1] -= 0.1;
-
-    if (keys[SDL_SCANCODE_1]) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDisable(GL_CULL_FACE);
-    }
-
-    if (keys[SDL_SCANCODE_2]) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glEnable(GL_CULL_FACE);
-    }
-
-    if (keys[SDL_SCANCODE_3]) currentBunnyShader = &this->textureShader;
-    if (keys[SDL_SCANCODE_4]) currentBunnyShader = &this->phongShader;
-    if (keys[SDL_SCANCODE_5]) currentBunnyShader = &this->toonShader;
-    if (keys[SDL_SCANCODE_7]) blendingBaseTexture = &textures[0];
-    if (keys[SDL_SCANCODE_8]) blendingBaseTexture = &textures[1];
-}
-
-void Game::loadShaders() {
-    this->blendingShader = rt3d::initShaders(
-            assetsPaths::blendingShader.vertex.c_str(),
-            assetsPaths::blendingShader.fragment.c_str()
-    );
-    this->gouraudShader = initProgramWithLight(
-            assetsPaths::gouraudShader.vertex.c_str(),
-            assetsPaths::gouraudShader.fragment.c_str()
-    );
-    this->phongShader = initProgramWithLight(
-            assetsPaths::phongShader.vertex.c_str(),
-            assetsPaths::phongShader.fragment.c_str()
-    );
-    this->skyboxShader = rt3d::initShaders(
-            assetsPaths::cubeMapShader.vertex.c_str(),
-            assetsPaths::cubeMapShader.fragment.c_str()
-    );
-    this->textureShader = rt3d::initShaders(
-            assetsPaths::texturedShader.vertex.c_str(),
-            assetsPaths::texturedShader.fragment.c_str()
-    );
-    this->toonShader = initProgramWithLight(
-            assetsPaths::toonShader.vertex.c_str(),
-            assetsPaths::toonShader.fragment.c_str()
-    );
-}
-
 void Game::init() {
+    this->lights = {Light(Constants::initialLightPosition)};
+
     this->loadShaders();
 
     currentBunnyShader = &this->toonShader;
@@ -166,6 +103,79 @@ void Game::init() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void Game::loadShaders() {
+    this->blendingShader = rt3d::initShaders(
+            assetsPaths::blendingShader.vertex.c_str(),
+            assetsPaths::blendingShader.fragment.c_str()
+    );
+
+    this->gouraudShader = rt3d::initShaders(
+            assetsPaths::gouraudShader.vertex.c_str(),
+            assetsPaths::gouraudShader.fragment.c_str()
+    );
+    Shader::setLight(this->gouraudShader, Constants::light0, Constants::material0);
+
+    this->phongShader = rt3d::initShaders(
+            assetsPaths::phongShader.vertex.c_str(),
+            assetsPaths::phongShader.fragment.c_str()
+    );
+    Shader::setLight(this->phongShader, Constants::light0, Constants::material0);
+
+    this->skyboxShader = rt3d::initShaders(
+            assetsPaths::cubeMapShader.vertex.c_str(),
+            assetsPaths::cubeMapShader.fragment.c_str()
+    );
+
+    this->textureShader = rt3d::initShaders(
+            assetsPaths::texturedShader.vertex.c_str(),
+            assetsPaths::texturedShader.fragment.c_str()
+    );
+
+    this->toonShader = rt3d::initShaders(
+            assetsPaths::toonShader.vertex.c_str(),
+            assetsPaths::toonShader.fragment.c_str()
+    );
+    Shader::setLight(this->toonShader, Constants::light0, Constants::material0);
+}
+
+void Game::handleUserInput() {
+    // Todo : Handle KeyPresses events instead of checking if the key is
+    //  pressed each loop, or find a better way to structure this function
+    const Uint8 *keys = SDL_GetKeyboardState(nullptr);
+    if (keys[SDL_SCANCODE_W]) player.moveForward(0.1f);
+    if (keys[SDL_SCANCODE_S]) player.moveForward(-0.1f);
+    if (keys[SDL_SCANCODE_A]) player.moveRight(-0.1f);
+    if (keys[SDL_SCANCODE_D]) player.moveRight(0.1f);
+    if (keys[SDL_SCANCODE_R]) player.moveUp(0.1f);
+    if (keys[SDL_SCANCODE_F]) player.moveUp(-0.1f);
+
+    if (keys[SDL_SCANCODE_Q]) player.lookRight(-1.0f);
+    if (keys[SDL_SCANCODE_E]) player.lookRight(1.0f);
+
+    if (keys[SDL_SCANCODE_I]) lights[0].moveForward(-0.1f);
+    if (keys[SDL_SCANCODE_J]) lights[0].moveRight(-0.1f);
+    if (keys[SDL_SCANCODE_K]) lights[0].moveForward(0.1f);
+    if (keys[SDL_SCANCODE_L]) lights[0].moveRight(0.1f);
+    if (keys[SDL_SCANCODE_U]) lights[0].moveUp(0.1f);
+    if (keys[SDL_SCANCODE_H]) lights[0].moveUp(-0.1f);
+
+    if (keys[SDL_SCANCODE_1]) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDisable(GL_CULL_FACE);
+    }
+
+    if (keys[SDL_SCANCODE_2]) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glEnable(GL_CULL_FACE);
+    }
+
+    if (keys[SDL_SCANCODE_3]) currentBunnyShader = &this->textureShader;
+    if (keys[SDL_SCANCODE_4]) currentBunnyShader = &this->phongShader;
+    if (keys[SDL_SCANCODE_5]) currentBunnyShader = &this->toonShader;
+    if (keys[SDL_SCANCODE_7]) blendingBaseTexture = &textures[0];
+    if (keys[SDL_SCANCODE_8]) blendingBaseTexture = &textures[1];
 }
 
 void Game::draw() {
@@ -210,10 +220,8 @@ void Game::draw() {
     // Back to remainder of rendering
     glDepthMask(GL_TRUE); // Make sure depth test is on
 
-    glm::vec4 tmp = mvStack.top()*lightPos;
-    light0.position[0] = tmp.x;
-    light0.position[1] = tmp.y;
-    light0.position[2] = tmp.z;
+    glm::vec4 tmp = mvStack.top() * Constants::initialLightPosition;
+//    this->lights[0].setPosition(tmp);
     rt3d::setLightPos(this->phongShader, glm::value_ptr(tmp));
     rt3d::setLightPos(this->toonShader, glm::value_ptr(tmp));
     rt3d::setLightPos(this->gouraudShader, glm::value_ptr(tmp));
@@ -225,10 +233,11 @@ void Game::draw() {
     // Draw a small cube block at lightPos
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     mvStack.push(mvStack.top());
-    mvStack.top() = glm::translate(mvStack.top(), glm::vec3(lightPos[0], lightPos[1], lightPos[2]));
+    glm::vec4 lightPosition = lights[0].getPosition();
+    mvStack.top() = glm::translate(mvStack.top(), glm::vec3(lightPosition[0], lightPosition[1], lightPosition[2]));
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.25f, 0.25f, 0.25f));
     rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(this->phongShader, material0);
+    rt3d::setMaterial(this->phongShader, Constants::material0);
     rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
     mvStack.pop();
 
@@ -238,7 +247,7 @@ void Game::draw() {
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
     rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(this->phongShader, material0);
+    rt3d::setMaterial(this->phongShader, Constants::material0);
     rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
     mvStack.pop();
 
@@ -249,7 +258,7 @@ void Game::draw() {
         mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f + b * 2, 1.0f, -16.0f + b * 2));
         mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.5f, 1.0f + b, 0.5f));
         rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
-        rt3d::setMaterial(this->phongShader, material0);
+        rt3d::setMaterial(this->phongShader, Constants::material0);
         rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
         mvStack.pop();
     }
@@ -263,7 +272,7 @@ void Game::draw() {
     theta += 1.0f;
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.5f, 0.5f, 0.5f));
     rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(this->phongShader, material1);
+    rt3d::setMaterial(this->phongShader, Constants::material1);
     rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
     mvStack.pop();
 
@@ -274,7 +283,7 @@ void Game::draw() {
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
     rt3d::setUniformMatrix4fv(*this->currentBunnyShader, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::setMaterial(*this->currentBunnyShader, material0);
+    rt3d::setMaterial(*this->currentBunnyShader, Constants::material0);
     rt3d::drawIndexedMesh(meshObjects[1].getMeshObject(), meshObjects[1].getMeshIndexCount(), GL_TRIANGLES);
     mvStack.pop();
 
