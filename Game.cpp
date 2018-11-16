@@ -72,14 +72,22 @@ void Game::setupRenderingContext() {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4); // Turn on x4 multisampling anti-aliasing (MSAA)
 
-    // Create 800x600 window
-    this->mainWindow = SDL_CreateWindow("SDL/GLM/OpenGL Demo", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-    if (!this->mainWindow) // Check window was created OK
-        throw std::runtime_error("Unable to create window : " + std::string(SDL_GetError()));
+    this->mainWindow = SDL_CreateWindow("SDL/GLM/OpenGL Demo",
+                                        SDL_WINDOWPOS_CENTERED,
+                                        SDL_WINDOWPOS_CENTERED,
+                                        Constants::BaseWindowSize::width,
+                                        Constants::BaseWindowSize::height,
+                                        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
-    this->mainContext = SDL_GL_CreateContext(this->mainWindow); // Create openGL context and attach to window
-    SDL_GL_SetSwapInterval(1); // set swap buffers to sync with monitor's vertical refresh rate
+    if (!this->mainWindow) {
+        throw std::runtime_error("Unable to create window : "
+                                 + std::string(SDL_GetError()));
+    }
+
+    // Create openGL context and attach to window
+    this->mainContext = SDL_GL_CreateContext(this->mainWindow);
+    // set swap buffers to sync with monitor's vertical refresh rate
+    SDL_GL_SetSwapInterval(1);
 }
 
 void Game::init() {
@@ -139,6 +147,14 @@ void Game::loadShaders() {
     );
     Shader::setLight(this->toonShader, Constants::light0, Constants::material0);
 }
+
+void Game::handleWindowEvent(const SDL_WindowEvent & windowEvent) {
+    if (SDL_WINDOWEVENT_SIZE_CHANGED == windowEvent.event) {
+        int width = windowEvent.data1;
+        int height = windowEvent.data2;
+    }
+}
+
 
 void Game::handleUserInput() {
     // Todo : Handle KeyPresses events instead of checking if the key is

@@ -6,6 +6,11 @@
 #include "rt3d.h"
 
 namespace Constants {
+    namespace BaseWindowSize {
+        const int width = 800;
+        const int height = 600;
+    };
+
     const double degreeToRadian = 0.017453293;
 
     const glm::vec4 initialLightPosition(-5.0f, 2.0f, 2.0f, 1.0f);
@@ -14,7 +19,7 @@ namespace Constants {
         const float constant = 1.0f;
         const float linear = 0.0f;
         const float quadratic = 0.0f;
-    }
+    };
 
     const rt3d::lightStruct light0 = {
             {0.4f, 0.4f, 0.4f, 1.0f}, // ambient
@@ -35,7 +40,6 @@ namespace Constants {
             {0.8f, 0.8f, 0.8f, 1.0f}, // specular
             1.0f  // shininess
     };
-
 };
 
 #endif //AGP_GROUP_PROJECT_CONSTANTS_H

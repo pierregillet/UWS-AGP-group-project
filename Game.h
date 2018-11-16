@@ -40,6 +40,7 @@ private:
     void setupRenderingContext();
     void init();
     void loadShaders();
+    void handleWindowEvent(const SDL_WindowEvent & windowEvent);
     void handleUserInput();
     void draw();
 };
