@@ -175,7 +175,6 @@ void Game::handleWindowEvent(const SDL_WindowEvent & windowEvent) {
     }
 }
 
-
 void Game::handleUserInput() {
     // Todo : Handle KeyPresses events instead of checking if the key is
     //  pressed each loop, or find a better way to structure this function
