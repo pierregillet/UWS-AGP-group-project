@@ -23,6 +23,8 @@ public:
 private:
     SDL_Window *mainWindow; // window handle
     SDL_GLContext mainContext; // OpenGL context handle
+    unsigned int mainWindowWidth;
+    unsigned int mainWindowHeight;
     GLuint blendingShader;
     GLuint gouraudShader;
     GLuint phongShader;

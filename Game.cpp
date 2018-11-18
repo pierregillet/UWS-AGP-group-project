@@ -19,7 +19,10 @@
 
 
 Game::Game() {
-    this->setupRenderingContext(); // Create window and render context
+    // Create window and render context
+    this->mainWindowWidth = Constants::BaseWindowSize::width;
+    this->mainWindowHeight = Constants::BaseWindowSize::height;
+    this->setupRenderingContext();
     this->initializeGlew();
     this->init();
 }
@@ -36,8 +39,17 @@ void Game::runEventLoop() {
 
     while (running) {
         while (SDL_PollEvent(&sdlEvent)) {
-            if (sdlEvent.type == SDL_QUIT) {
-                running = false;
+            switch (sdlEvent.type) {
+                case SDL_QUIT:
+                    running = false;
+                    break;
+
+                case SDL_WINDOWEVENT:
+                    this->handleWindowEvent(sdlEvent.window);
+                    break;
+
+                default:
+                    break;
             }
         }
         this->handleUserInput();
@@ -60,24 +72,29 @@ void Game::initializeGlew() {
 
 void Game::setupRenderingContext() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) // Initialize video
-        throw std::runtime_error("Unable to initialize SDL : " + std::string(SDL_GetError()));
+        throw std::runtime_error("Unable to initialize SDL : "
+                                 + std::string(SDL_GetError()));
 
     // Request an OpenGL 3.0 context.
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);  // double buffering on
     SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8); // 8 bit alpha buffering
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4); // Turn on x4 multisampling anti-aliasing (MSAA)
+    // Turn on x4 multisampling anti-aliasing (MSAA)
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
     this->mainWindow = SDL_CreateWindow("SDL/GLM/OpenGL Demo",
                                         SDL_WINDOWPOS_CENTERED,
                                         SDL_WINDOWPOS_CENTERED,
-                                        Constants::BaseWindowSize::width,
-                                        Constants::BaseWindowSize::height,
-                                        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+                                        this->mainWindowWidth,
+                                        this->mainWindowHeight,
+                                        SDL_WINDOW_OPENGL
+                                        | SDL_WINDOW_RESIZABLE
+                                        | SDL_WINDOW_SHOWN);
 
     if (!this->mainWindow) {
         throw std::runtime_error("Unable to create window : "
@@ -123,13 +140,15 @@ void Game::loadShaders() {
             assetsPaths::gouraudShader.vertex.c_str(),
             assetsPaths::gouraudShader.fragment.c_str()
     );
-    Shader::setLight(this->gouraudShader, Constants::light0, Constants::material0);
+    Shader::setLight(this->gouraudShader, Constants::light0,
+                     Constants::material0);
 
     this->phongShader = rt3d::initShaders(
             assetsPaths::phongShader.vertex.c_str(),
             assetsPaths::phongShader.fragment.c_str()
     );
-    Shader::setLight(this->phongShader, Constants::light0, Constants::material0);
+    Shader::setLight(this->phongShader, Constants::light0,
+                     Constants::material0);
 
     this->skyboxShader = rt3d::initShaders(
             assetsPaths::cubeMapShader.vertex.c_str(),
@@ -150,8 +169,9 @@ void Game::loadShaders() {
 
 void Game::handleWindowEvent(const SDL_WindowEvent & windowEvent) {
     if (SDL_WINDOWEVENT_SIZE_CHANGED == windowEvent.event) {
-        int width = windowEvent.data1;
-        int height = windowEvent.data2;
+        this->mainWindowWidth = (unsigned int) windowEvent.data1;
+        this->mainWindowHeight = (unsigned int) windowEvent.data2;
+        glViewport(0, 0, this->mainWindowWidth, this->mainWindowHeight);
     }
 }
 
@@ -203,7 +223,8 @@ void Game::draw() {
 
     glm::mat4 projection(1.0);
     projection = glm::perspective(float(60.0f * Constants::degreeToRadian),
-                                  800.0f / 600.0f, 1.0f, 150.0f);
+                                  float(this->mainWindowWidth) / float(this->mainWindowHeight),
+                                  1.0f, 150.0f);
 
 
     GLfloat scale(1.0f); // Just to allow easy scaling of complete scene
