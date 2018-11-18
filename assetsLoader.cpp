@@ -12,7 +12,6 @@
 
 #include <string>
 
-#include "sdlUtils.h" // TODO: Get rid of the globals to get rid of this ugly import
 
 // A simple texture loading function
 // lots of room for improvement - and better error checking!

@@ -13,7 +13,6 @@ set(srcs main.cpp
         Player.cpp Player.h
         rt3d.cpp rt3d.h
         rt3dObjLoader.cpp rt3dObjLoader.h
-        sdlUtils.cpp sdlUtils.h
         Shader.h Shader.cpp)
 add_executable(agp_group_project ${srcs})
 

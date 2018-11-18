@@ -1,7 +1,9 @@
 #include "Game.h"
 
 #include <GL/glew.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include <stack>
 #ifdef _WIN32
 #include <SDL.h>
 #endif
@@ -14,7 +16,6 @@
 #include "constants.h"
 #include "Mesh.h"
 #include "rt3dObjLoader.h"
-#include "sdlUtils.h"
 #include "Shader.h"
 
 
@@ -125,6 +126,10 @@ void Game::init() {
     meshObjects = {Mesh(assetsPaths::cubeObject),
                    Mesh(assetsPaths::bunnyObject)};
 
+    this->player = Player(glm::vec3(-2.0f, 1.0f, 8.0f),
+                          glm::vec3(0.0f, 1.0f, -1.0f),
+                          glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -220,18 +225,11 @@ void Game::draw() {
     glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glm::mat4 projection(1.0);
-    projection = glm::perspective(float(60.0f * Constants::degreeToRadian),
+    glm::mat4 projection = glm::perspective(float(60.0f * Constants::degreeToRadian),
                                   float(this->mainWindowWidth) / float(this->mainWindowHeight),
                                   1.0f, 150.0f);
 
-
-    GLfloat scale(1.0f); // Just to allow easy scaling of complete scene
-
-    glm::mat4 modelview(1.0); // Set base position for scene
-    mvStack.push(modelview);
-
-    mvStack.top() = player.getCameraDirection();
+    mvStack.push(player.getCameraDirection());
 
     // Skybox as single cube using cube map
     glUseProgram(this->skyboxShader);
@@ -257,7 +255,6 @@ void Game::draw() {
     glDepthMask(GL_TRUE); // Make sure depth test is on
 
     glm::vec4 tmp = mvStack.top() * Constants::initialLightPosition;
-//    this->lights[0].setPosition(tmp);
     rt3d::setLightPos(this->phongShader, glm::value_ptr(tmp));
     rt3d::setLightPos(this->toonShader, glm::value_ptr(tmp));
     rt3d::setLightPos(this->gouraudShader, glm::value_ptr(tmp));
@@ -304,8 +301,10 @@ void Game::draw() {
     glBindTexture(GL_TEXTURE_2D, textures[1]);
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -3.0f));
-    mvStack.top() = glm::rotate(mvStack.top(), float(theta * Constants::degreeToRadian), glm::vec3(1.0f, 1.0f, 1.0f));
-    theta += 1.0f;
+    mvStack.top() = glm::rotate(mvStack.top(),
+                                float(this->rotatingCubeAngle * Constants::degreeToRadian),
+                                glm::vec3(1.0f, 1.0f, 1.0f));
+    this->rotatingCubeAngle += 1.0f;
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.5f, 0.5f, 0.5f));
     rt3d::setUniformMatrix4fv(this->phongShader, "modelview", glm::value_ptr(mvStack.top()));
     rt3d::setMaterial(this->phongShader, Constants::material1);

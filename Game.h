@@ -12,6 +12,7 @@
 
 #include "Mesh.h"
 #include "Light.h"
+#include "Player.h"
 
 
 class Game {
@@ -37,6 +38,10 @@ private:
     std::vector<Mesh> meshObjects;
     std::vector<GLuint> textures;
     std::vector<GLuint> skybox = std::vector<GLuint>(6);
+    Player player = Player(glm::vec3(-2.0f, 1.0f, 8.0f),
+                           glm::vec3(0.0f, 1.0f, -1.0f),
+                           glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
+    float rotatingCubeAngle = 0.0f;
 
     void initializeGlew();
     void setupRenderingContext();
