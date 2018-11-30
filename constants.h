@@ -2,6 +2,7 @@
 #define AGP_GROUP_PROJECT_CONSTANTS_H
 
 #include <glm/glm.hpp>
+#include <vector>
 
 #include "rt3d.h"
 
@@ -14,6 +15,7 @@ namespace Constants {
     const double degreeToRadian = 0.017453293;
 
     const glm::vec4 initialLightPosition(-5.0f, 2.0f, 2.0f, 1.0f);
+    const unsigned int motionBlurFramesKept = 5;
 
     namespace LightAttenuation {
         const float constant = 1.0f;
@@ -39,6 +41,19 @@ namespace Constants {
             {0.8f, 0.8f, 1.0f, 1.0f}, // diffuse
             {0.8f, 0.8f, 0.8f, 1.0f}, // specular
             1.0f  // shininess
+    };
+
+    // vertex attributes for a quad that fills the entire screen
+    // in Normalized Device Coordinates.
+    const GLfloat screenQuadVertices[] = {
+            // positions   // texCoords
+            -1.0f,  1.0f,  0.0f, 1.0f,
+            -1.0f, -1.0f,  0.0f, 0.0f,
+            1.0f, -1.0f,  1.0f, 0.0f,
+
+            -1.0f,  1.0f,  0.0f, 1.0f,
+            1.0f, -1.0f,  1.0f, 0.0f,
+            1.0f,  1.0f,  1.0f, 1.0f
     };
 };
 

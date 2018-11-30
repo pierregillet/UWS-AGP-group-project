@@ -12,6 +12,7 @@
 
 #include "Mesh.h"
 #include "Light.h"
+#include "MotionBlurEffect.h"
 #include "Player.h"
 
 
@@ -32,16 +33,23 @@ private:
     GLuint skyboxShader;
     GLuint textureShader;
     GLuint toonShader;
+    GLuint motionBlurShader;
+    GLuint screenQuadShader;
     GLuint *currentBunnyShader;
     GLuint *blendingBaseTexture;
     std::vector<Light> lights;
     std::vector<Mesh> meshObjects;
+    GLuint screenQuadVao;
+    GLuint screenQuadVbo;
+    GLuint colorBufferTexture;
     std::vector<GLuint> textures;
     std::vector<GLuint> skybox = std::vector<GLuint>(6);
     Player player = Player(glm::vec3(-2.0f, 1.0f, 8.0f),
                            glm::vec3(0.0f, 1.0f, -1.0f),
                            glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
     float rotatingCubeAngle = 0.0f;
+    MotionBlurEffect motionBlurEffect;
+    GLuint motionBlurFrameBuffer;
 
     void initializeGlew();
     void setupRenderingContext();

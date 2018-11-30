@@ -22,6 +22,10 @@ Mesh::Mesh(const std::string &objectPath) {
     );
 }
 
+Mesh::Mesh(const GLuint vao) {
+    this->meshObject = vao;
+}
+
 GLuint Mesh::getMeshIndexCount() {
     return this->meshIndexCount;
 }

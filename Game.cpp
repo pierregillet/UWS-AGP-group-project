@@ -123,16 +123,81 @@ void Game::init() {
 
     blendingBaseTexture = &textures[0];
 
-    meshObjects = {Mesh(assetsPaths::cubeObject),
-                   Mesh(assetsPaths::bunnyObject)};
+    meshObjects = {
+            Mesh(assetsPaths::cubeObject), // [0]
+            Mesh(assetsPaths::bunnyObject), // [1]
+    };
 
     this->player = Player(glm::vec3(-2.0f, 1.0f, 8.0f),
                           glm::vec3(0.0f, 1.0f, -1.0f),
                           glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//    // generate and set up a VAO for the screen quad (for post-processing)
+//    glGenVertexArrays(1, &this->screenQuadVao);
+//    glBindVertexArray(this->screenQuadVao);
+//    glGenBuffers(1, &this->screenQuadVbo);
+//    glBindBuffer(GL_ARRAY_BUFFER, this->screenQuadVbo);
+////    glBufferData(GL_ARRAY_BUFFER, sizeof(Constants::screenQuadVertices),
+////                 Constants::screenQuadVertices, GL_STATIC_DRAW);
+
+
+    glGenFramebuffers(1, &this->motionBlurFrameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, this->motionBlurFrameBuffer);
+
+
+
+    // Rendering to a texture
+    glGenTextures(1, &this->colorBufferTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
+                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           this->colorBufferTexture, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        switch (glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+
+            case GL_FRAMEBUFFER_UNDEFINED:
+                throw std::runtime_error("GL_FRAMEBUFFER_UNDEFINED");
+
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+
+            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+
+            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+
+            default:
+                throw std::runtime_error("Framebuffer is not complete");
+        }
+
+// screen quad VAO
+        glGenVertexArrays(1, &this->screenQuadVao);
+        glGenBuffers(1, &this->screenQuadVbo);
+        glBindVertexArray(this->screenQuadVao);
+        glBindBuffer(GL_ARRAY_BUFFER, this->screenQuadVbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Constants::screenQuadVertices),
+                     &Constants::screenQuadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                              (void*) nullptr);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                              (void*)(2 * sizeof(GLfloat)));
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // Setting back the default framebuffer
+
+    this->motionBlurEffect.setShader(this->motionBlurShader);
+    this->motionBlurEffect.setFramesKept(Constants::motionBlurFramesKept);
+
 }
 
 void Game::loadShaders() {
@@ -170,6 +235,16 @@ void Game::loadShaders() {
             assetsPaths::toonShader.fragment.c_str()
     );
     Shader::setLight(this->toonShader, Constants::light0, Constants::material0);
+
+    this->motionBlurShader = rt3d::initShaders(
+            assetsPaths::motionBlurShader.vertex.c_str(),
+            assetsPaths::motionBlurShader.fragment.c_str()
+    );
+
+    this->screenQuadShader = rt3d::initShaders(
+            assetsPaths::screenQuadShader.vertex.c_str(),
+            assetsPaths::screenQuadShader.fragment.c_str()
+    );
 }
 
 void Game::handleWindowEvent(const SDL_WindowEvent & windowEvent) {
@@ -219,6 +294,8 @@ void Game::handleUserInput() {
 }
 
 void Game::draw() {
+//    glBindFramebuffer(GL_FRAMEBUFFER, this->motionBlurFrameBuffer);
+
     std::stack<glm::mat4> mvStack;
     // clear the screen
     glEnable(GL_CULL_FACE);
@@ -350,6 +427,73 @@ void Game::draw() {
     // Remember to use at least one pop operation per push...
     mvStack.pop(); // initial matrix
     glDepthMask(GL_TRUE);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+
+     // Post processing effects
+
+    // Motion blur processing
+//    glUseProgram(this->motionBlurShader);
+
+    // CAREFUL !!! there's a SIGSEGV hiding in there...
+//    this->motionBlurEffect.updateBufferedTextures(colorBufferTexture);
+
+//    // TODO: check the size of this array, and/or make a loop using an iterator
+//    std::list<GLuint> bufferedFrames = motionBlurEffect.getBufferedFrames();
+//
+//    auto listIterator = bufferedFrames.begin();
+//    GLint texturesUniformLocation = glGetUniformLocation(this->motionBlurShader,
+//                                                         "bufferedTextures");
+
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D, *listIterator++);
+//    glUniform1i(texturesUniformLocation, 0);
+//
+//    glActiveTexture(GL_TEXTURE1);
+//    glBindTexture(GL_TEXTURE_2D, *listIterator++);
+//    glUniform1i(texturesUniformLocation, 1);
+//
+//    glActiveTexture(GL_TEXTURE2);
+//    glBindTexture(GL_TEXTURE_2D, *listIterator++);
+//    glUniform1i(texturesUniformLocation, 2);
+//
+//    glActiveTexture(GL_TEXTURE3);
+//    glBindTexture(GL_TEXTURE_2D, *listIterator++);
+//    glUniform1i(texturesUniformLocation, 3);
+//
+//    glActiveTexture(GL_TEXTURE4);
+//    glBindTexture(GL_TEXTURE_2D, *listIterator++);
+//    glUniform1i(texturesUniformLocation, 4);
+
+    // learnopengl.com tutorial
+//    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+//    glClear(GL_COLOR_BUFFER_BIT);
+
+//    glUseProgram(this->screenQuadShader);
+//    glBindVertexArray(this->screenQuadVao);
+//    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+//
+//    glDisable(GL_DEPTH_TEST);
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D, colorBufferTexture);
+//    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+    // clear all relevant buffers
+//    glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear color to white (not really necessery actually, since we won't be able to see behind the quad anyways)
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(this->screenQuadShader);
+    glBindVertexArray(this->screenQuadVao);
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTexture);	// use the color attachment texture as the texture of the quad plane
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+//    // End of motion blur processing
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     SDL_GL_SwapWindow(this->mainWindow); // swap buffers
 }
