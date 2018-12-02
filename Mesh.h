@@ -11,7 +11,7 @@ private:
 
 public:
     explicit Mesh(const std::string & objectPath);
-    explicit Mesh(const GLuint vao);
+    explicit Mesh(GLuint vao);
 
     GLuint getMeshIndexCount();
     GLuint getMeshObject();

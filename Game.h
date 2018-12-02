@@ -10,6 +10,7 @@
 #include <SDL2/SDL.h>
 #endif
 
+#include "constants.h"
 #include "Mesh.h"
 #include "Light.h"
 #include "MotionBlurEffect.h"
@@ -34,14 +35,14 @@ private:
     GLuint textureShader;
     GLuint toonShader;
     GLuint motionBlurShader;
-    GLuint screenQuadShader;
     GLuint *currentBunnyShader;
     GLuint *blendingBaseTexture;
     std::vector<Light> lights;
     std::vector<Mesh> meshObjects;
     GLuint screenQuadVao;
     GLuint screenQuadVbo;
-    GLuint colorBufferTexture;
+    GLuint colorBufferTextures[Constants::motionBlurFramesKept];
+    int currentColorBufferTexture;
     std::vector<GLuint> textures;
     std::vector<GLuint> skybox = std::vector<GLuint>(6);
     Player player = Player(glm::vec3(-2.0f, 1.0f, 8.0f),

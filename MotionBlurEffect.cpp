@@ -36,7 +36,14 @@ void MotionBlurEffect::setFramesKept(const unsigned int &framesKept) {
 }
 
 void MotionBlurEffect::updateBufferedTextures(const GLuint &bufferedTexture) {
-    this->bufferedTextures.pop_front();
+    if (this->bufferedTextures.size() < this->framesKept - 1) {
+        while (this->bufferedTextures.size() < this->framesKept) {
+            this->bufferedTextures.push_back(bufferedTexture);
+        }
+    } else {
+        this->bufferedTextures.pop_front();
+    }
+
     this->bufferedTextures.push_back(bufferedTexture);
 }
 
