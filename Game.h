@@ -13,7 +13,6 @@
 #include "constants.h"
 #include "Mesh.h"
 #include "Light.h"
-#include "MotionBlurEffect.h"
 #include "Player.h"
 
 
@@ -49,13 +48,13 @@ private:
                            glm::vec3(0.0f, 1.0f, -1.0f),
                            glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
     float rotatingCubeAngle = 0.0f;
-    MotionBlurEffect motionBlurEffect;
     GLuint motionBlurFrameBuffer;
 
     void initializeGlew();
     void setupRenderingContext();
     void init();
     void loadShaders();
+    void initMotionBlurTextures();
     void handleWindowEvent(const SDL_WindowEvent & windowEvent);
     void handleUserInput();
     void draw();

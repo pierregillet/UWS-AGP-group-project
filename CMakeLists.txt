@@ -10,7 +10,6 @@ set(srcs main.cpp
         Game.cpp Game.h
         Light.cpp Light.h
         md2model.cpp md2model.h
-        MotionBlurEffect.cpp MotionBlurEffect.h
         Player.cpp Player.h
         rt3d.cpp rt3d.h
         rt3dObjLoader.cpp rt3dObjLoader.h

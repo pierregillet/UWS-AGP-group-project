@@ -139,18 +139,11 @@ void Game::init() {
     glGenTextures(Constants::motionBlurFramesKept, this->colorBufferTextures);
     this->currentColorBufferTexture = 0;
 
-    for (GLuint colorBufferTexture : this->colorBufferTextures) {
-        glBindTexture(GL_TEXTURE_2D, colorBufferTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
-                     this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    this->initMotionBlurTextures();
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                               colorBufferTexture, 0);
-    }
-
+    // Check for Framebuffer error(s)
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         switch (glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
             case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
@@ -173,7 +166,7 @@ void Game::init() {
         }
     }
 
-	// screen quad VAO
+    // screen quad VAO
     glGenVertexArrays(1, &this->screenQuadVao);
     glGenBuffers(1, &this->screenQuadVbo);
     glBindVertexArray(this->screenQuadVao);
@@ -187,9 +180,6 @@ void Game::init() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
                             (void*)(2 * sizeof(GLfloat)));
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // Setting back the default framebuffer
-
-    this->motionBlurEffect.setShader(this->motionBlurShader);
-    this->motionBlurEffect.setFramesKept(Constants::motionBlurFramesKept);
 }
 
 void Game::loadShaders() {
@@ -234,11 +224,55 @@ void Game::loadShaders() {
     );
 }
 
+void Game::initMotionBlurTextures() {
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[0]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
+                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           this->colorBufferTextures[0], 0);
+
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
+                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                           this->colorBufferTextures[1], 0);
+
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[2]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
+                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+                           this->colorBufferTextures[2], 0);
+
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[3]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
+                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D,
+                           this->colorBufferTextures[3], 0);
+
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[4]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
+                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D,
+                           this->colorBufferTextures[4], 0);
+}
+
 void Game::handleWindowEvent(const SDL_WindowEvent & windowEvent) {
     if (SDL_WINDOWEVENT_SIZE_CHANGED == windowEvent.event) {
         this->mainWindowWidth = (unsigned int) windowEvent.data1;
         this->mainWindowHeight = (unsigned int) windowEvent.data2;
         glViewport(0, 0, this->mainWindowWidth, this->mainWindowHeight);
+
+        this->initMotionBlurTextures();
     }
 }
 
@@ -283,22 +317,34 @@ void Game::handleUserInput() {
 void Game::draw() {
     glBindFramebuffer(GL_FRAMEBUFFER, this->motionBlurFrameBuffer);
 
-    if (this->currentColorBufferTexture >= Constants::motionBlurFramesKept - 1) {
+    if (++this->currentColorBufferTexture >= Constants::motionBlurFramesKept) {
         this->currentColorBufferTexture = 0;
-    } else {
-        this->currentColorBufferTexture += 1;
     }
 
-//    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[this->currentColorBufferTexture]);
+    switch (this->currentColorBufferTexture) {
+        case 0:
+            glDrawBuffer(GL_COLOR_ATTACHMENT0);
+            break;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->mainWindowWidth,
-                 this->mainWindowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+        case 1:
+            glDrawBuffer(GL_COLOR_ATTACHMENT1);
+            break;
 
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        case 2:
+            glDrawBuffer(GL_COLOR_ATTACHMENT2);
+            break;
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                           this->colorBufferTextures[this->currentColorBufferTexture], 0);
+        case 3:
+            glDrawBuffer(GL_COLOR_ATTACHMENT3);
+            break;
+
+        case 4:
+            glDrawBuffer(GL_COLOR_ATTACHMENT4);
+            break;
+
+        default:
+            break;
+    }
 
     std::stack<glm::mat4> mvStack;
     // clear the screen
@@ -341,6 +387,7 @@ void Game::draw() {
     rt3d::setLightPos(this->gouraudShader, glm::value_ptr(tmp));
 
     glUseProgram(this->phongShader);
+    glActiveTexture(GL_TEXTURE0);
     rt3d::setUniformMatrix4fv(this->phongShader, "projection",
                               glm::value_ptr(projection));
 
@@ -399,7 +446,7 @@ void Game::draw() {
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
 
 	mvStack.top() = glm::rotate(mvStack.top(),
-		50.0f*float(this->rotatingCubeAngle * Constants::degreeToRadian),
+		20.0f*float(this->rotatingCubeAngle * Constants::degreeToRadian),
 		glm::vec3(1.0f, 1.0f, 1.0f));
 
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
@@ -445,49 +492,42 @@ void Game::draw() {
     // Motion blur processing
      glUseProgram(this->motionBlurShader);
 
-    this->motionBlurEffect.updateBufferedTextures(
-            static_cast<const GLuint &>(this->currentColorBufferTexture)
-    );
-
 	GLint texturesUniformLocation = glGetUniformLocation(this->motionBlurShader,
 		"bufferedTextures");
 
     // TODO: check the size of this array, and/or make a loop using an iterator
-    std::list<GLuint> bufferedFrames = motionBlurEffect.getBufferedFrames();
-    auto listIterator = bufferedFrames.begin();
-
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, *listIterator);
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[0]);
     glUniform1i(texturesUniformLocation, 0);
 
-	glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, *++listIterator);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[1]);
     glUniform1i(texturesUniformLocation, 1);
 
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, *++listIterator);
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[2]);
     glUniform1i(texturesUniformLocation, 2);
 
     glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, *++listIterator);
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[3]);
     glUniform1i(texturesUniformLocation, 3);
 
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, *++listIterator);
+    glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[4]);
     glUniform1i(texturesUniformLocation, 4);
 
-    glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+    // disable depth test so screen-space quad isn't discarded due to depth test.
+    glDisable(GL_DEPTH_TEST);
     // clear all relevant buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // glUseProgram(this->screenQuadShader);
     glBindVertexArray(this->screenQuadVao);
     // use the color attachment texture as the texture of the quad plane
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[this->currentColorBufferTexture]);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
     // End of motion blur processing
 
-	glActiveTexture(GL_TEXTURE0);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
