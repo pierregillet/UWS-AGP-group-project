@@ -78,6 +78,7 @@ private:
     void initMotionBlurTextures();
     void handleWindowEvent(const SDL_WindowEvent & windowEvent);
     void handleUserInput();
+    void checkFrameBufferCompleteness();
     void draw();
 };
 

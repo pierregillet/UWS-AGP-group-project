@@ -143,28 +143,7 @@ void Game::init() {
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // Check for Framebuffer error(s)
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        switch (glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
-
-            case GL_FRAMEBUFFER_UNDEFINED:
-                throw std::runtime_error("GL_FRAMEBUFFER_UNDEFINED");
-
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
-
-            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
-
-            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-                throw std::runtime_error("GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
-
-            default:
-                throw std::runtime_error("Framebuffer is not complete");
-        }
-    }
+    this->checkFrameBufferCompleteness();
 
     // screen quad VAO
     glGenVertexArrays(1, &this->screenQuadVao);
@@ -179,7 +158,28 @@ void Game::init() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
                             (void*)(2 * sizeof(GLfloat)));
-    glBindFramebuffer(GL_FRAMEBUFFER, 0); // Setting back the default framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+    glGenFramebuffers(1, &this->depthMapFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, this->depthMapFBO);
+
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, this->SHADOW_WIDTH,
+                 this->SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, this->depthMap, 0);
+	glDrawBuffer(GL_NONE);
+
+	this->checkFrameBufferCompleteness();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 void Game::loadShaders() {
@@ -328,6 +328,36 @@ void Game::handleUserInput() {
     if (keys[SDL_SCANCODE_7]) blendingBaseTexture = &textures[0];
     if (keys[SDL_SCANCODE_8]) blendingBaseTexture = &textures[1];
 }
+
+
+void Game::checkFrameBufferCompleteness() {
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        switch (glCheckFramebufferStatus(GL_FRAMEBUFFER)) {
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                throw std::runtime_error(
+                        "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT");
+
+            case GL_FRAMEBUFFER_UNDEFINED:
+                throw std::runtime_error("GL_FRAMEBUFFER_UNDEFINED");
+
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                throw std::runtime_error(
+                        "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT");
+
+            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+                throw std::runtime_error(
+                        "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER");
+
+            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+                throw std::runtime_error(
+                        "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS");
+
+            default:
+                throw std::runtime_error("Framebuffer is not complete");
+        }
+    }
+}
+
 
 void Game::draw() {
     glBindFramebuffer(GL_FRAMEBUFFER, this->motionBlurFrameBuffer);
