@@ -610,38 +610,54 @@ void Game::renderMotionBlurScene() {
 
 // Shadow mapping methods
 void Game::configureShaderAndMatrices() {
-    float near_plane = -10.0f, far_plane = 20.0f;
-    glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    float near_plane = -10.0f, far_plane = 100.0f;
+    // tweak the view frustum to get full visibility of the scene from the light
+    glm::mat4 lightProjection = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, near_plane, far_plane);
 
+    //view matrix from lights point of view
     glm::mat4 lightView = glm::lookAt(glm::vec3(this->lights[0].getPosition()),
                                       glm::vec3(0.0f, 0.0f, 0.0f),
                                       glm::vec3(0.0f, 1.0f, 0.0f));
 
     glm::mat4 depthModelMatrix = glm::mat4(1.0);
 
-    lightSpaceMatrix = lightProjection * lightView * depthModelMatrix;
-
-    glm::mat4 biasMatrix(
-            0.5, 0.0, 0.0, 0.0,
-            0.0, 0.5, 0.0, 0.0,
-            0.0, 0.0, 0.5, 0.0,
-            0.5, 0.5, 0.5, 1.0
-    );
-    depthBiasMVP = biasMatrix*lightSpaceMatrix;
+    //transformation matrix that transforms each world-space vector into the space as visible from the light source
+    lightSpaceMatrix = lightProjection * lightView;
+    depthBiasMVP = Constants::biasMatrix * lightSpaceMatrix;
 }
 
 void Game::renderShadowScene(GLuint shaderProgram, int _i_pass) {
     std::stack<glm::mat4> mvStack;
+    std::stack<glm::mat4> mvStack_light;
+
     glUseProgram(shaderProgram);
     glm::mat4 modelview(1.0); // set base position for scene
+
     mvStack.push(modelview);
+    mvStack_light.push(lightSpaceMatrix);
 
     if (0 == _i_pass) {
-        int lightSpaceMatrixLocation = glGetUniformLocation(shaderProgram, "depthMVP");
-        glUniformMatrix4fv(lightSpaceMatrixLocation, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
-    } else if (1 == _i_pass ) {
+        mvStack.push(mvStack_light.top());
+        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
+        mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
+        rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+        mvStack.pop();
+
+        rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
+
+        mvStack.push(mvStack_light.top());
+        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->cubePosition[0],
+                                                                this->cubePosition[1],
+                                                                this->cubePosition[2]));
+        mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.5f, 1.5f, 1.5f));
+        rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+        mvStack.pop();
+        rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
+    }
+
+    if (1 == _i_pass) {
         glm::mat4 projection(1.0);
-        projection = glm::perspective(float(60.0f), 800.0f / 600.0f, 0.01f, 150.0f);
+        projection = glm::perspective(3.14f*float(60.0f) / 180.0f, 800.0f / 600.0f, 0.01f, 150.0f);
         rt3d::setUniformMatrix4fv(shaderProgram, "projection", glm::value_ptr(projection));
 
         mvStack.push(modelview);
@@ -652,81 +668,47 @@ void Game::renderShadowScene(GLuint shaderProgram, int _i_pass) {
         glUniform1i(TextureID, 1);
         glBindTexture(GL_TEXTURE_2D, depthMap);
 
-
-        int biasMatrixLocation = glGetUniformLocation(shaderProgram, "DepthBiasMVP");
-        glUniformMatrix4fv(biasMatrixLocation, 1, GL_FALSE, glm::value_ptr(depthBiasMVP));
-    }
-
-    if (1 == _i_pass) {
-        // draw light cube
-        //glBindTexture(GL_TEXTURE_2D, textures[0]);
         mvStack.push(mvStack.top());
-        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->lights[0].getPosition()));//glm::vec3(lightPos[0], lightPos[1], lightPos[2]));
+        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->lights[0].getPosition()));
         mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.25f, 0.25f, 0.25f));
         rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
         rt3d::setMaterial(shaderProgram, Constants::material0);
         rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
         mvStack.pop();
+
+        mvStack_light.push(mvStack_light.top());
+        mvStack_light.top() = glm::translate(mvStack_light.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
+        mvStack_light.top() = glm::scale(mvStack_light.top(), glm::vec3(20.0f, 0.1f, 20.0f));
+        mvStack_light.top() = Constants::biasMatrix * mvStack_light.top();
+        rt3d::setUniformMatrix4fv(shaderProgram, "DepthBiasMVP", glm::value_ptr(mvStack_light.top()));
+        mvStack_light.pop();
+
+        mvStack.push(mvStack.top());
+
+        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
+        mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
+        rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+        mvStack.pop();
+
+        rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
+
+        mvStack.push(mvStack.top());
+        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->cubePosition[0],
+                                                                this->cubePosition[1],
+                                                                this->cubePosition[2]));
+        mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.5f, 1.5f, 1.5f));
+        rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+        mvStack.pop();
+
+        mvStack_light.push(mvStack_light.top());
+        mvStack_light.top() = glm::translate(mvStack_light.top(), glm::vec3(this->cubePosition[0],
+                                                                            this->cubePosition[1],
+                                                                            this->cubePosition[2]));
+        mvStack_light.top() = glm::scale(mvStack_light.top(), glm::vec3(1.5f, 1.5f, 1.5f));
+        mvStack_light.top() = Constants::biasMatrix * mvStack_light.top();
+        rt3d::setUniformMatrix4fv(shaderProgram, "DepthBiasMVP", glm::value_ptr(mvStack_light.top()));
+        mvStack_light.pop();
+
+        rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
     }
-
-    // draw a cube for ground plane
-    mvStack.push(mvStack.top());
-    mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
-    mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
-    rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
-    mvStack.pop();
-
-    // draw a small cube block at cubePos
-    mvStack.push(mvStack.top());
-    mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->cubePosition[0],
-                                                            this->cubePosition[1],
-                                                            this->cubePosition[2]));
-    mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.5f, 1.5f, 1.5f));
-    rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-    rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
-    mvStack.pop();
-
-    if (_i_pass == 1)
-    {
-        // Optionally render the shadowmap (for debug only)
-
-        // Render only on a corner of the window (or we we won't see the real rendering...)
-        glViewport(0, 0, 256, 256);
-
-        // Use our shader
-        glUseProgram(quad_programID);
-
-        /*
-        // Bind our texture in Texture Unit 0
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, depthMap);
-        // Set our "renderedTexture" sampler to use Texture Unit 0
-        GLuint texID = glGetUniformLocation(quad_programID, "mytexture");
-        glUniform1i(texID, 0);
-        */
-        // 1rst attribute buffer : vertices
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
-        glVertexAttribPointer(
-                0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-                3,                  // size
-                GL_FLOAT,           // type
-                GL_FALSE,           // normalized?
-                0,                  // stride
-                (void*) nullptr     // array buffer offset
-        );
-
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_DEPTH_TEST);
-        // Draw the triangle !
-        // You have to disable GL_COMPARE_R_TO_TEXTURE above in order to see anything !
-        glDrawArrays(GL_TRIANGLES, 0, 6); // 2*3 indices starting at 0 -> 2 triangles
-        glEnable(GL_DEPTH_TEST);
-        glDisableVertexAttribArray(0);
-    }
-
-    // remember to use at least one pop operation per push...
-    mvStack.pop(); // initial matrix
-    //glDepthMask(GL_TRUE);
 }

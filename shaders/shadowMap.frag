@@ -9,9 +9,8 @@ uniform sampler2D shadowMap;
 void main()
 {
 	float visibility = 1.0;
-	if (texture(shadowMap, ShadowCoord.xy).z  <  ShadowCoord.z)
+	if ( texture( shadowMap, ShadowCoord.xy ).r  <  ShadowCoord.z - 0.005)
 		visibility = 0.5;
 
-	float depth = texture(shadowMap, ShadowCoord.xy).r;
-	FragColor = vec4(ShadowCoord.z, ShadowCoord.z, ShadowCoord.z, 1.0);
+	FragColor = vec4(visibility, visibility, visibility, 1.0);
 }
