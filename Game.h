@@ -46,25 +46,24 @@ private:
                            glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
     float rotatingCubeAngle = 0.0f;
 
+    int selectedScene = 0;
+
     // Motion blur effect
     GLuint motionBlurFrameBuffer;
     GLuint motionBlurShader;
     GLuint colorBufferTextures[Constants::motionBlurFramesKept];
     GLint currentColorBufferTexture;
 
-    // Shadow mapping effect
+        // Shadow mapping effect
     GLuint shadowProgram;
     GLuint depthProgram;
     GLuint quad_programID;
-
     GLuint depthMap;
     GLuint depthMapFBO;
-
     GLuint quad_vertexbuffer;
-
     glm::mat4 lightSpaceMatrix;
     glm::mat4 depthBiasMVP;
-
+    glm::vec4 cubePosition{Constants::initialCubePosition};
     const GLuint SHADOW_WIDTH = 1024;
     const GLuint SHADOW_HEIGHT = 1024;
 
@@ -80,6 +79,13 @@ private:
     void handleUserInput();
     void checkFrameBufferCompleteness();
     void draw();
+
+    // Motion blur & texture blending methods
+    void renderMotionBlurScene();
+
+    // Shadow mapping methods
+    void configureShaderAndMatrices();
+    void renderShadowScene(GLuint shaderProgram, int _i_pass);
 };
 
 

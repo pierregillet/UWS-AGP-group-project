@@ -15,6 +15,7 @@ namespace Constants {
     const double degreeToRadian = 0.017453293;
 
     const glm::vec4 initialLightPosition(-5.0f, 2.0f, 2.0f, 1.0f);
+    const glm::vec4 initialCubePosition(-5.0f, 2.0f, 2.0f, 1.0f);
     const unsigned int motionBlurFramesKept = 5;
 
     namespace LightAttenuation {

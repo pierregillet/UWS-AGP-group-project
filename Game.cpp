@@ -327,6 +327,11 @@ void Game::handleUserInput() {
     if (keys[SDL_SCANCODE_5]) currentBunnyShader = &this->toonShader;
     if (keys[SDL_SCANCODE_7]) blendingBaseTexture = &textures[0];
     if (keys[SDL_SCANCODE_8]) blendingBaseTexture = &textures[1];
+    if (keys[SDL_SCANCODE_9]) {
+        this->selectedScene = 0;
+        glViewport(0, 0, this->mainWindowWidth, this->mainWindowHeight);
+    }
+    if (keys[SDL_SCANCODE_0]) this->selectedScene = 1;
 }
 
 
@@ -360,6 +365,28 @@ void Game::checkFrameBufferCompleteness() {
 
 
 void Game::draw() {
+    if (0 == selectedScene) { // Motion blur & texture blending
+        this->renderMotionBlurScene();
+    } else if (1 == selectedScene) { // Shadow mapping
+        this->configureShaderAndMatrices();
+
+        // 0. first render to depth map
+        glViewport(0, 0, this->SHADOW_WIDTH, this->SHADOW_HEIGHT);
+        glBindFramebuffer(GL_FRAMEBUFFER, this->depthMapFBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        this->renderShadowScene(depthProgram, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        //// 1. render scene as normal using the generated depth/shadow map
+        //// --------------------------------------------------------------
+        glViewport(0, 0, this->mainWindowWidth, this->mainWindowHeight);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        this->renderShadowScene(shadowProgram, 1);
+        SDL_GL_SwapWindow(this->mainWindow); // swap buffers
+    }
+}
+
+void Game::renderMotionBlurScene() {
     glBindFramebuffer(GL_FRAMEBUFFER, this->motionBlurFrameBuffer);
 
     if (++this->currentColorBufferTexture >= Constants::motionBlurFramesKept) {
@@ -398,8 +425,8 @@ void Game::draw() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glm::mat4 projection = glm::perspective(float(60.0f * Constants::degreeToRadian),
-                                  float(this->mainWindowWidth) / float(this->mainWindowHeight),
-                                  1.0f, 150.0f);
+                                            float(this->mainWindowWidth) / float(this->mainWindowHeight),
+                                            1.0f, 150.0f);
 
     mvStack.push(player.getCameraDirection());
 
@@ -490,9 +517,9 @@ void Game::draw() {
     mvStack.push(mvStack.top());
     mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
 
-	mvStack.top() = glm::rotate(mvStack.top(),
-		20.0f*float(this->rotatingCubeAngle * Constants::degreeToRadian),
-		glm::vec3(1.0f, 1.0f, 1.0f));
+    mvStack.top() = glm::rotate(mvStack.top(),
+                                20.0f*float(this->rotatingCubeAngle * Constants::degreeToRadian),
+                                glm::vec3(1.0f, 1.0f, 1.0f));
 
     mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
     rt3d::setUniformMatrix4fv(*this->currentBunnyShader, "modelview", glm::value_ptr(mvStack.top()));
@@ -535,10 +562,10 @@ void Game::draw() {
     // Post processing effects
 
     // Motion blur processing
-     glUseProgram(this->motionBlurShader);
+    glUseProgram(this->motionBlurShader);
 
-	GLint texturesUniformLocation = glGetUniformLocation(this->motionBlurShader,
-		"bufferedTextures");
+    GLint texturesUniformLocation = glGetUniformLocation(this->motionBlurShader,
+                                                         "bufferedTextures");
 
     // TODO: check the size of this array, and/or make a loop using an iterator
     glActiveTexture(GL_TEXTURE0);
@@ -564,13 +591,13 @@ void Game::draw() {
     // disable depth test so screen-space quad isn't discarded due to depth test.
     glDisable(GL_DEPTH_TEST);
     // clear all relevant buffers
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindVertexArray(this->screenQuadVao);
     // use the color attachment texture as the texture of the quad plane
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, this->colorBufferTextures[this->currentColorBufferTexture]);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     // End of motion blur processing
 
     glEnable(GL_DEPTH_TEST);
@@ -578,4 +605,128 @@ void Game::draw() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     SDL_GL_SwapWindow(this->mainWindow); // swap buffers
+}
+
+
+// Shadow mapping methods
+void Game::configureShaderAndMatrices() {
+    float near_plane = -10.0f, far_plane = 20.0f;
+    glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+
+    glm::mat4 lightView = glm::lookAt(glm::vec3(this->lights[0].getPosition()),
+                                      glm::vec3(0.0f, 0.0f, 0.0f),
+                                      glm::vec3(0.0f, 1.0f, 0.0f));
+
+    glm::mat4 depthModelMatrix = glm::mat4(1.0);
+
+    lightSpaceMatrix = lightProjection * lightView * depthModelMatrix;
+
+    glm::mat4 biasMatrix(
+            0.5, 0.0, 0.0, 0.0,
+            0.0, 0.5, 0.0, 0.0,
+            0.0, 0.0, 0.5, 0.0,
+            0.5, 0.5, 0.5, 1.0
+    );
+    depthBiasMVP = biasMatrix*lightSpaceMatrix;
+}
+
+void Game::renderShadowScene(GLuint shaderProgram, int _i_pass) {
+    std::stack<glm::mat4> mvStack;
+    glUseProgram(shaderProgram);
+    glm::mat4 modelview(1.0); // set base position for scene
+    mvStack.push(modelview);
+
+    if (0 == _i_pass) {
+        int lightSpaceMatrixLocation = glGetUniformLocation(shaderProgram, "depthMVP");
+        glUniformMatrix4fv(lightSpaceMatrixLocation, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+    } else if (1 == _i_pass ) {
+        glm::mat4 projection(1.0);
+        projection = glm::perspective(float(60.0f), 800.0f / 600.0f, 0.01f, 150.0f);
+        rt3d::setUniformMatrix4fv(shaderProgram, "projection", glm::value_ptr(projection));
+
+        mvStack.push(modelview);
+        mvStack.top() = this->player.getCameraDirection();
+
+        glActiveTexture(GL_TEXTURE1);
+        GLint TextureID = glGetUniformLocation(shaderProgram, "shadowMap");
+        glUniform1i(TextureID, 1);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+
+
+        int biasMatrixLocation = glGetUniformLocation(shaderProgram, "DepthBiasMVP");
+        glUniformMatrix4fv(biasMatrixLocation, 1, GL_FALSE, glm::value_ptr(depthBiasMVP));
+    }
+
+    if (1 == _i_pass) {
+        // draw light cube
+        //glBindTexture(GL_TEXTURE_2D, textures[0]);
+        mvStack.push(mvStack.top());
+        mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->lights[0].getPosition()));//glm::vec3(lightPos[0], lightPos[1], lightPos[2]));
+        mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.25f, 0.25f, 0.25f));
+        rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+        rt3d::setMaterial(shaderProgram, Constants::material0);
+        rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
+        mvStack.pop();
+    }
+
+    // draw a cube for ground plane
+    mvStack.push(mvStack.top());
+    mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
+    mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
+    rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
+    mvStack.pop();
+
+    // draw a small cube block at cubePos
+    mvStack.push(mvStack.top());
+    mvStack.top() = glm::translate(mvStack.top(), glm::vec3(this->cubePosition[0],
+                                                            this->cubePosition[1],
+                                                            this->cubePosition[2]));
+    mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.5f, 1.5f, 1.5f));
+    rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+    rt3d::drawIndexedMesh(meshObjects[0].getMeshObject(), meshObjects[0].getMeshIndexCount(), GL_TRIANGLES);
+    mvStack.pop();
+
+    if (_i_pass == 1)
+    {
+        // Optionally render the shadowmap (for debug only)
+
+        // Render only on a corner of the window (or we we won't see the real rendering...)
+        glViewport(0, 0, 256, 256);
+
+        // Use our shader
+        glUseProgram(quad_programID);
+
+        /*
+        // Bind our texture in Texture Unit 0
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        // Set our "renderedTexture" sampler to use Texture Unit 0
+        GLuint texID = glGetUniformLocation(quad_programID, "mytexture");
+        glUniform1i(texID, 0);
+        */
+        // 1rst attribute buffer : vertices
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
+        glVertexAttribPointer(
+                0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+                3,                  // size
+                GL_FLOAT,           // type
+                GL_FALSE,           // normalized?
+                0,                  // stride
+                (void*) nullptr     // array buffer offset
+        );
+
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        // Draw the triangle !
+        // You have to disable GL_COMPARE_R_TO_TEXTURE above in order to see anything !
+        glDrawArrays(GL_TRIANGLES, 0, 6); // 2*3 indices starting at 0 -> 2 triangles
+        glEnable(GL_DEPTH_TEST);
+        glDisableVertexAttribArray(0);
+    }
+
+    // remember to use at least one pop operation per push...
+    mvStack.pop(); // initial matrix
+    //glDepthMask(GL_TRUE);
 }
