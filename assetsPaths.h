@@ -51,6 +51,15 @@ namespace assetsPaths {
 
     const Shader motionBlurShader = {rootPath + "shaders/motionBlur.vert",
                                      rootPath + "shaders/motionBlur.frag"};
+
+    const Shader shadowMapShader = {rootPath + "shaders/shadowMap.vert",
+                                    rootPath + "shaders/shadowMap.frag"};
+
+    const Shader depthShader = {rootPath + "shaders/depth.vert",
+                               rootPath + "shaders/depth.frag"};
+
+    const Shader quadShader = {rootPath + "shaders/passthrough.vert",
+                               rootPath + "shaders/passthrough.frag"};
 };
 
 #endif //AGP_INDIVIDUAL_PROJECT_ASSETSPATHS_H

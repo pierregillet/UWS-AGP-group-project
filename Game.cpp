@@ -222,6 +222,21 @@ void Game::loadShaders() {
             assetsPaths::motionBlurShader.vertex.c_str(),
             assetsPaths::motionBlurShader.fragment.c_str()
     );
+
+    this->shadowProgram = rt3d::initShaders(
+            assetsPaths::shadowMapShader.vertex.c_str(),
+            assetsPaths::shadowMapShader.fragment.c_str()
+    );
+
+	this->depthProgram = rt3d::initShaders(
+            assetsPaths::depthShader.vertex.c_str(),
+            assetsPaths::depthShader.fragment.c_str()
+	);
+
+	this->quad_programID = rt3d::initShaders(
+            assetsPaths::quadShader.vertex.c_str(),
+            assetsPaths::quadShader.fragment.c_str()
+	);
 }
 
 void Game::initMotionBlurTextures() {

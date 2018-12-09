@@ -33,22 +33,43 @@ private:
     GLuint skyboxShader;
     GLuint textureShader;
     GLuint toonShader;
-    GLuint motionBlurShader;
     GLuint *currentBunnyShader;
     GLuint *blendingBaseTexture;
     std::vector<Light> lights;
     std::vector<Mesh> meshObjects;
     GLuint screenQuadVao;
     GLuint screenQuadVbo;
-    GLuint colorBufferTextures[Constants::motionBlurFramesKept];
-    int currentColorBufferTexture;
     std::vector<GLuint> textures;
     std::vector<GLuint> skybox = std::vector<GLuint>(6);
     Player player = Player(glm::vec3(-2.0f, 1.0f, 8.0f),
                            glm::vec3(0.0f, 1.0f, -1.0f),
                            glm::vec3(0.0f, 1.0f, 0.0f), 0.0f);
     float rotatingCubeAngle = 0.0f;
+
+    // Motion blur effect
     GLuint motionBlurFrameBuffer;
+    GLuint motionBlurShader;
+    GLuint colorBufferTextures[Constants::motionBlurFramesKept];
+    GLint currentColorBufferTexture;
+
+    // Shadow mapping effect
+    GLuint shadowProgram;
+    GLuint depthProgram;
+    GLuint quad_programID;
+
+    GLuint depthMap;
+    GLuint depthMapFBO;
+
+    GLuint quad_vertexbuffer;
+
+    glm::mat4 lightSpaceMatrix;
+    glm::mat4 depthBiasMVP;
+
+    const GLuint SHADOW_WIDTH = 1024;
+    const GLuint SHADOW_HEIGHT = 1024;
+
+    float counter = 4.7f; //variable used to update time for explosion effect
+
 
     void initializeGlew();
     void setupRenderingContext();
